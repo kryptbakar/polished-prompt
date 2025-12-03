@@ -1,0 +1,98 @@
+# 🚀 YOUR DEPLOYMENT QUICK CARD
+
+**Print this out or bookmark it!**
+
+---
+
+## 📍 YOUR REPO
+```
+https://github.com/kryptbakar/polished-prompt
+```
+
+---
+
+## STEP 1️⃣ RAILWAY (Backend + Database)
+
+**Go to:** https://railway.app
+
+**Do this:**
+1. Login with GitHub
+2. Create New Project → Provision PostgreSQL
+3. New → From GitHub Repo → select polished-prompt
+4. Deploy Now
+5. While building, go to Variables and add:
+   - DATABASE_URL (copy from PostgreSQL)
+   - SESSION_SECRET: my-secret-key-12345
+   - NODE_ENV: production
+   - PORT: 5000
+   - REPL_ID: railway-prod
+
+**⏱️ Time: 5 minutes**
+
+**When done:**
+Copy your Railway URL:
+```
+https://your-railway-url.up.railway.app
+```
+SAVE THIS! 👇
+
+---
+
+## STEP 2️⃣ VERCEL (Frontend)
+
+**Go to:** https://vercel.com
+
+**Do this:**
+1. Sign Up with GitHub
+2. Add New → Project → select polished-prompt
+3. Import
+4. Verify settings:
+   - Build: npm run build
+   - Output: dist/client
+5. Add Environment Variable:
+   - VITE_API_URL: [PASTE YOUR RAILWAY URL]
+6. Deploy
+
+**⏱️ Time: 3 minutes**
+
+**When done:**
+You get a live URL:
+```
+https://your-vercel-url.vercel.app
+```
+
+---
+
+## ✅ DONE!
+
+Your app is LIVE!
+- **Frontend**: Vercel URL
+- **Backend**: Railway URL
+
+Test it out! 🎉
+
+---
+
+## 📚 GUIDES ON GITHUB
+
+All in your repo on GitHub:
+
+- **SUPER_SIMPLE_DEPLOY.md** ⭐ (Copy-paste friendly)
+- STEP_BY_STEP_DEPLOY.md (Detailed)
+- DEPLOYMENT_GUIDE.md (Troubleshooting)
+
+---
+
+## 💡 KEY THINGS REMEMBER
+
+✅ Save your Railway URL after deploy
+✅ Paste Railway URL into Vercel's VITE_API_URL
+✅ Make sure GitHub repo is PUBLIC
+✅ DATABASE_URL comes from Railway PostgreSQL service
+✅ SESSION_SECRET can be any random string
+
+---
+
+**YOU'VE GOT THIS!** 🚀
+
+Go to https://railway.app right now and start! →
