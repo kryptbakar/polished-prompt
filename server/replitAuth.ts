@@ -28,13 +28,14 @@ export function getSession() {
     tableName: "sessions",
   });
   return session({
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.SESSION_SECRET || "default-secret-change-in-production",
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production", // Only secure in production
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Support cross-site in production
       maxAge: sessionTtl,
     },
   });
@@ -128,11 +129,42 @@ export async function setupAuth(app: Express) {
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
-  app.get("/api/login", (req, res, next) => {
+  app.get("/api/login", async (req, res, next) => {
     if (!config) {
-      // Auth not available, return demo user
-      req.user = { id: "demo", email: "demo@example.com" };
-      res.redirect("/");
+      // Auth not available, create/use demo user
+      const demoUserId = "demo-user-123";
+      let demoUser = await storage.getUser(demoUserId);
+      
+      if (!demoUser) {
+        // Create demo user if it doesn't exist
+        demoUser = await storage.upsertUser({
+          id: demoUserId,
+          email: "demo@example.com",
+          firstName: "Demo",
+          lastName: "User",
+          isAdmin: false,
+        });
+      }
+      
+      // Set user in session
+      req.user = {
+        id: demoUser.id,
+        claims: {
+          sub: demoUser.id,
+          email: demoUser.email,
+          first_name: demoUser.firstName,
+          last_name: demoUser.lastName,
+        },
+      };
+      
+      // Save to session
+      req.login(req.user, (err) => {
+        if (err) {
+          console.error("Error logging in demo user:", err);
+          return res.redirect("/");
+        }
+        res.redirect("/");
+      });
       return;
     }
     ensureStrategy(req.hostname);
@@ -144,7 +176,8 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/callback", (req, res, next) => {
     if (!config) {
-      res.redirect("/");
+      // In demo mode, just redirect to login which will create demo user
+      res.redirect("/api/login");
       return;
     }
     ensureStrategy(req.hostname);

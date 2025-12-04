@@ -103,7 +103,7 @@ export default function TurfDetail() {
 
     createBookingMutation.mutate({
       turfId: turf.id,
-      userId: "", // Will be set by backend
+      // userId will be set by backend from authenticated session
       teamId: selectedTeamId || null,
       bookingDate: selectedDate.toISOString().split('T')[0],
       startTime: selectedStartTime,

@@ -4,20 +4,29 @@ import { storage } from "./storage";
 import { insertTurfSchema, insertTeamSchema, insertBookingSchema, insertMatchSchema, insertTournamentSchema, insertMatchInvitationSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Login endpoint - just redirect to home (no actual auth needed)
-  app.get('/api/login', async (req: any, res) => {
-    res.redirect('/');
-  });
-
-  // Logout endpoint - just redirect to home
-  app.get('/api/logout', async (req: any, res) => {
-    res.redirect('/');
-  });
-
-  // Auth user endpoint - return a demo user
+  // Auth user endpoint - return the actual authenticated user from session
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      res.json({ id: 'demo', email: 'demo@example.com', isAdmin: false });
+      // Check if user is authenticated
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const userClaims = req.user.claims || {};
+      const userId = userClaims.sub || req.user.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+
+      // Get user from database
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -60,7 +69,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/turfs', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+
       const user = await storage.getUser(userId);
       
       if (!user?.isAdmin) {
@@ -99,7 +116,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/teams/my', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+
       const teams = await storage.getTeamsByCaptain(userId);
       res.json(teams);
     } catch (error) {
@@ -123,7 +148,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/teams', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+
       const validated = insertTeamSchema.parse({ ...req.body, captainId: userId });
       const team = await storage.createTeam(validated);
       res.status(201).json(team);
@@ -199,7 +232,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Booking routes
   app.get('/api/bookings', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+
       const bookings = await storage.getBookingsByUser(userId);
       res.json(bookings);
     } catch (error) {
@@ -210,7 +251,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/bookings', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
       
       // Check for overlapping bookings
       const turfBookings = await storage.getBookingsByTurf(req.body.turfId);
@@ -233,7 +281,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ message: "Time slot already booked" });
       }
 
-      const validated = insertBookingSchema.parse({ ...req.body, userId });
+      // Remove userId from body if provided (we'll use the authenticated user's ID)
+      const { userId: _, ...bookingData } = req.body;
+      const validated = insertBookingSchema.parse({ ...bookingData, userId });
       const booking = await storage.createBooking(validated);
       res.status(201).json(booking);
     } catch (error: any) {
@@ -362,7 +412,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/tournaments', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+
       const validated = insertTournamentSchema.parse({ ...req.body, organizerId: userId });
       const tournament = await storage.createTournament(validated);
       res.status(201).json(tournament);
@@ -375,7 +433,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes
   app.get('/api/admin/turfs', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+
       const user = await storage.getUser(userId);
       
       if (!user?.isAdmin) {
@@ -392,7 +458,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/admin/bookings', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+
       const user = await storage.getUser(userId);
       
       if (!user?.isAdmin) {

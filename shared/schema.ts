@@ -29,7 +29,7 @@ export const sessions = pgTable(
 // User storage table (required for Replit Auth)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique(),
+  email: varchar("email"),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
@@ -57,7 +57,7 @@ export const turfs = pgTable("turfs", {
 // Teams
 export const teams = pgTable("teams", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull().unique(),
+  name: text("name").notNull(),
   captainId: varchar("captain_id").references(() => users.id).notNull(),
   location: text("location").notNull(),
   preferredTurfType: varchar("preferred_turf_type", { length: 50 }),
@@ -311,8 +311,11 @@ export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({
 
 export const insertBookingSchema = createInsertSchema(bookings).omit({
   id: true,
+  userId: true, // userId is set by backend from authenticated session
   createdAt: true,
   updatedAt: true,
+}).extend({
+  userId: z.string().optional(), // Optional for frontend, backend will set it
 });
 
 export const insertMatchSchema = createInsertSchema(matches).omit({
