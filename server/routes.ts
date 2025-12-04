@@ -4,12 +4,20 @@ import { storage } from "./storage";
 import { insertTurfSchema, insertTeamSchema, insertBookingSchema, insertMatchSchema, insertTournamentSchema, insertMatchInvitationSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth routes (removed - no auth required)
+  // Login endpoint - just redirect to home (no actual auth needed)
+  app.get('/api/login', async (req: any, res) => {
+    res.redirect('/');
+  });
+
+  // Logout endpoint - just redirect to home
+  app.get('/api/logout', async (req: any, res) => {
+    res.redirect('/');
+  });
+
+  // Auth user endpoint - return a demo user
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      res.json({ id: 'demo', email: 'demo@example.com', isAdmin: false });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
