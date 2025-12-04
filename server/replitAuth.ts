@@ -67,8 +67,16 @@ export async function setupAuth(app: Express) {
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
-
-  let config;
+  // If REPL_ID is not set, or set to a placeholder value (railway-prod), skip OIDC
+  const replId = process.env.REPL_ID;
+  if (!replId || replId.startsWith("railway")) {
+    console.warn("REPL_ID is not configured for production or is using a placeholder value (e.g. 'railway-prod').");
+    console.warn("Skipping OIDC setup. To enable Replit OAuth, set REPL_ID to your Replit client id and add REPL_SECRET if required.");
+    console.warn("Remember to set the callback URL in your Replit app to: https://<your-domain>/api/callback");
+    var config: null | any = null;
+  } else {
+    var config: any | null = null;
+  }
   try {
     config = await Promise.race([
       getOidcConfig(),
