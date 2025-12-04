@@ -1,15 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertTurfSchema, insertTeamSchema, insertBookingSchema, insertMatchSchema, insertTournamentSchema, insertMatchInvitationSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
-
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Auth routes (removed - no auth required)
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -54,7 +50,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/turfs', isAuthenticated, async (req: any, res) => {
+  app.post('/api/turfs', async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -93,7 +89,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/teams/my', isAuthenticated, async (req: any, res) => {
+  app.get('/api/teams/my', async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const teams = await storage.getTeamsByCaptain(userId);
@@ -117,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/teams', isAuthenticated, async (req: any, res) => {
+  app.post('/api/teams', async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const validated = insertTeamSchema.parse({ ...req.body, captainId: userId });
@@ -130,7 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Matchmaking routes
-  app.get('/api/matchmaking/suggestions/:teamId', isAuthenticated, async (req, res) => {
+  app.get('/api/matchmaking/suggestions/:teamId', async (req, res) => {
     try {
       const teamId = req.params.teamId;
       const myTeam = await storage.getTeam(teamId);
@@ -171,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Match invitation routes
-  app.get('/api/match-invitations', isAuthenticated, async (_req, res) => {
+  app.get('/api/match-invitations', async (_req, res) => {
     try {
       const invitations = await storage.getMatchInvitations();
       res.json(invitations);
@@ -181,7 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/match-invitations', isAuthenticated, async (req, res) => {
+  app.post('/api/match-invitations', async (req, res) => {
     try {
       const validated = insertMatchInvitationSchema.parse(req.body);
       const invitation = await storage.createMatchInvitation(validated);
@@ -193,7 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Booking routes
-  app.get('/api/bookings', isAuthenticated, async (req: any, res) => {
+  app.get('/api/bookings', async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const bookings = await storage.getBookingsByUser(userId);
@@ -204,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/bookings', isAuthenticated, async (req: any, res) => {
+  app.post('/api/bookings', async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       
@@ -249,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/matches', isAuthenticated, async (req, res) => {
+  app.post('/api/matches', async (req, res) => {
     try {
       const validated = insertMatchSchema.parse(req.body);
       const match = await storage.createMatch(validated);
@@ -260,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/matches/:id', isAuthenticated, async (req, res) => {
+  app.patch('/api/matches/:id', async (req, res) => {
     try {
       const match = await storage.updateMatch(req.params.id, req.body);
       if (!match) {
@@ -356,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/tournaments', isAuthenticated, async (req: any, res) => {
+  app.post('/api/tournaments', async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const validated = insertTournamentSchema.parse({ ...req.body, organizerId: userId });
@@ -369,7 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
-  app.get('/api/admin/turfs', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/turfs', async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -386,7 +382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/bookings', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/bookings', async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
