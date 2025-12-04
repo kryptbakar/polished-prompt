@@ -68,7 +68,19 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  const config = await getOidcConfig();
+  let config;
+  try {
+    config = await Promise.race([
+      getOidcConfig(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("OIDC config timeout")), 5000)
+      )
+    ]);
+  } catch (error) {
+    console.error("Failed to load OIDC config:", error);
+    console.warn("Continuing without authentication - some features may not work");
+    config = null;
+  }
 
   const verify: VerifyFunction = async (
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
@@ -85,12 +97,16 @@ export async function setupAuth(app: Express) {
 
   // Helper function to ensure strategy exists for a domain
   const ensureStrategy = (domain: string) => {
+    if (!config) {
+      console.warn("OIDC config not available, skipping strategy setup");
+      return;
+    }
     const strategyName = `replitauth:${domain}`;
     if (!registeredStrategies.has(strategyName)) {
       const strategy = new Strategy(
         {
           name: strategyName,
-          config,
+          config: config as any,
           scope: "openid email profile offline_access",
           callbackURL: `https://${domain}/api/callback`,
         },
@@ -122,12 +138,16 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/logout", (req, res) => {
     req.logout(() => {
-      res.redirect(
-        client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href
-      );
+      if (config) {
+        res.redirect(
+          (client.buildEndSessionUrl(config as any, {
+            client_id: process.env.REPL_ID!,
+            post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
+          }) as any).href
+        );
+      } else {
+        res.redirect("/");
+      }
     });
   });
 }
